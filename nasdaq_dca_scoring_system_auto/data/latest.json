@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-04-23T00:00:00Z",
+  "as_of": "2026-04-17",
+  "mode": "sample",
+  "meta": {
+    "index_source": "sample",
+    "vol_source": "sample",
+    "pe_source": "sample",
+    "note": "部署后可由 GitHub Actions 自动改写"
+  },
+  "record": {
+    "date": "2026-04-17",
+    "price": 26672.43,
+    "pe": 36.19,
+    "ma200": 24589.0,
+    "vix": 17.48,
+    "pePercentile": 0.984062,
+    "bias": 8.473016,
+    "peScore": 0.478125,
+    "maScore": 3.053967,
+    "vixScore": 4.96,
+    "total": 8.492092,
+    "gradeLetter": "D",
+    "gradeNote": "偏高，控制节奏"
+  }
+}
