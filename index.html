@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>纳指100自动定投打分系统</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">
+        <h1 id="siteTitle">纳指100自动定投打分系统</h1>
+        <div class="subtitle" id="siteSubtitle">Auto Daily Update · GitHub Pages + GitHub Actions</div>
+      </div>
+      <div class="meta">
+        <div class="meta-row">
+          <span class="status-pill">上次生成：<span id="updatedAt">--</span></span>
+          <span class="status-pill">数据源：<span id="autoSource">--</span></span>
+        </div>
+        <div class="meta-row">
+          <span>查看日期</span>
+          <select class="select" id="dateSelect"></select>
+          <button class="button" id="resetBtn">恢复自动数据</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="banner">
+      这个版本会优先读取 <span class="mono">data/latest.json</span> 和 <span class="mono">data/history.json</span>。<br />
+      你把项目放到 GitHub Pages 后，再用 GitHub Actions 每天定时运行 <span class="mono">scripts/fetch_data.py</span>，网页就会自动显示最新评分。
+    </div>
+
+    <div class="grid-top">
+      <div class="card metric-card">
+        <div>
+          <div class="metric-label">PE 十年百分位</div>
+          <div class="metric-value num" id="pePercentileCard">--</div>
+        </div>
+        <div class="metric-desc" id="peDesc">PE: --</div>
+      </div>
+      <div class="card metric-card">
+        <div>
+          <div class="metric-label">价格 VS MA200</div>
+          <div class="metric-value num" id="biasCard">--</div>
+        </div>
+        <div class="metric-desc" id="maDesc">MA200: --</div>
+      </div>
+      <div class="card metric-card">
+        <div>
+          <div class="metric-label" id="seriesVolLabel">VIX</div>
+          <div class="metric-value num" id="vixCard">--</div>
+        </div>
+        <div class="metric-desc" id="vixDesc">VIX 得分: --</div>
+      </div>
+      <div class="card metric-card grade-card">
+        <div>
+          <div class="grade-letter" id="gradeLetter">D</div>
+          <div class="grade-score"><span class="num" id="totalScore">0.0</span> / 100</div>
+          <div class="grade-note" id="gradeNote">偏高，控制节奏</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout-2">
+      <div class="card main-card">
+        <h2 class="section-title">自动化部署说明</h2>
+        <div class="helper" style="margin-top:0">
+          1）GitHub Pages 负责展示静态页面；<br />
+          2）GitHub Actions 每天定时抓取最新价格和波动率；<br />
+          3）脚本自动计算 MA200、各项得分、综合分，并写回 <span class="mono">data/*.json</span>；<br />
+          4）你每天打开网页，就能直接看到最新结果。<br /><br />
+          注意：默认自动抓 <span class="mono">NASDAQ100</span> 和 <span class="mono">VIXCLS</span>；PE 默认读取 <span class="mono">data/pe_history.json</span>，也支持用环境变量或自定义 JSON 地址覆盖。
+        </div>
+      </div>
+
+      <div class="card main-card">
+        <h2 class="section-title">浏览器内临时覆盖</h2>
+        <div class="form-grid">
+          <div class="field">
+            <label for="inputDate">日期</label>
+            <input class="input" id="inputDate" type="date" />
+          </div>
+          <div class="field">
+            <label for="inputPrice">NDX 价格</label>
+            <input class="input" id="inputPrice" type="number" step="0.01" />
+          </div>
+          <div class="field">
+            <label for="inputPe">当前 PE</label>
+            <input class="input" id="inputPe" type="number" step="0.01" />
+          </div>
+          <div class="field">
+            <label for="inputMa200">MA200</label>
+            <input class="input" id="inputMa200" type="number" step="0.01" />
+          </div>
+          <div class="field">
+            <label for="inputVix">VIX / VXN</label>
+            <input class="input" id="inputVix" type="number" step="0.01" />
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:18px; flex-wrap: wrap;">
+          <button class="button primary" id="calcBtn">临时写入浏览器历史</button>
+          <button class="button" id="exportBtn">导出当前 JSON</button>
+        </div>
+        <div class="helper">
+          这里的修改只在当前浏览器里生效，不会改 GitHub 上的自动数据文件。正式自动更新由 <span class="mono">scripts/fetch_data.py</span> 和工作流完成。
+        </div>
+      </div>
+    </div>
+
+    <div class="card main-card">
+      <h2 class="section-title">当前评分详情</h2>
+      <div class="detail-grid">
+        <div class="radar-wrap">
+          <canvas id="radarCanvas" width="300" height="300"></canvas>
+        </div>
+        <div class="bars">
+          <div class="bar-item">
+            <div class="bar-label" id="pePercentileLabel">PE 十年百分位（满分 30）</div>
+            <div class="bar-track"><div class="bar-fill" id="barPe" style="background: var(--purple);"></div></div>
+            <div class="bar-value num" id="barPeText">0 / 30</div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label" id="maLabel">MA200 偏离度（满分 40）</div>
+            <div class="bar-track"><div class="bar-fill" id="barMa" style="background: var(--green);"></div></div>
+            <div class="bar-value num" id="barMaText">0 / 40</div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label" id="volLabel">VIX 恐慌指数（满分 30）</div>
+            <div class="bar-track"><div class="bar-fill" id="barVix" style="background: var(--orange);"></div></div>
+            <div class="bar-value num" id="barVixText">0 / 30</div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-label">综合评分（满分 100）</div>
+            <div class="bar-track"><div class="bar-fill" id="barTotal" style="background: var(--cyan);"></div></div>
+            <div class="bar-value num" id="barTotalText">0 / 100</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card main-card">
+      <h2 class="section-title">历史评分记录</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>NDX 价格</th>
+              <th>PE</th>
+              <th>PE 百分位</th>
+              <th>MA200</th>
+              <th>偏离度</th>
+              <th>VIX/VXN</th>
+              <th>PE 得分</th>
+              <th>MA 得分</th>
+              <th>VIX 得分</th>
+              <th>综合</th>
+              <th>等级</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody"></tbody>
+        </table>
+      </div>
+      <div class="footer-note">
+        说明：这是一个“估值 + 趋势 + 情绪”的三因子定投评分面板。它更适合作为仓位节奏参考，不替代完整的资产配置与风险控制。
+      </div>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

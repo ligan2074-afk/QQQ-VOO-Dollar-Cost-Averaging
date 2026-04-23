@@ -1,0 +1,59 @@
+{
+  "title": "纳指100自动定投打分系统",
+  "subtitle": "Auto Daily Update · GitHub Pages + GitHub Actions",
+  "series": {
+    "index_label": "NASDAQ-100",
+    "index_series_id": "NASDAQ100",
+    "vol_label": "VIX",
+    "vol_series_id": "VIXCLS",
+    "vol_alt_series_id": "VXNCLS",
+    "pe_label": "纳指100 PE"
+  },
+  "weights": {
+    "pe": 30,
+    "ma": 40,
+    "vol": 30
+  },
+  "pe": {
+    "window_trading_days": 2520,
+    "min_samples_for_true_percentile": 120,
+    "fallback_min": 4.7,
+    "fallback_max": 36.7,
+    "label": "PE 十年百分位"
+  },
+  "ma": {
+    "window_days": 200,
+    "target_bias": -10.0,
+    "bias_range": 20.0,
+    "label": "价格 VS MA200"
+  },
+  "vol": {
+    "floor": 15.0,
+    "cap": 30.0,
+    "label": "VIX 恐慌指数"
+  },
+  "grades": [
+    {
+      "letter": "A",
+      "min": 80,
+      "note": "极具吸引力，可提高定投"
+    },
+    {
+      "letter": "B",
+      "min": 60,
+      "note": "估值偏合理，可积极定投"
+    },
+    {
+      "letter": "C",
+      "min": 40,
+      "note": "中性区间，正常定投"
+    },
+    {
+      "letter": "D",
+      "min": 0,
+      "note": "偏高，控制节奏"
+    }
+  ],
+  "history_limit": 252,
+  "display_timezone_note": "建议在亚洲时区中午后查看，更容易拿到上一美股交易日的完整日频数据。"
+}
