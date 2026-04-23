@@ -130,12 +130,15 @@ def fetch_world_pe(timeout: int = 20) -> float:
     response.raise_for_status()
     html = response.text
 
-    text = re.sub(r"<[^>]+>", " ", html)
+    text = re.sub(r"<script.*?</script>", " ", html, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<style.*?</style>", " ", text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
 
     patterns = [
+        r"The estimated Price-to-Earnings\s*\(P/E\)\s*Ratio\s*for\s*Nasdaq\s*100\s*Index\s*is\s*([0-9]+(?:\.[0-9]+)?)",
+        r"Price-to-Earnings\s*\(P/E\)\s*Ratio\s*for\s*Nasdaq\s*100\s*Index\s*is\s*([0-9]+(?:\.[0-9]+)?)",
         r"P/E\s*Ratio\s*for\s*Nasdaq\s*100\s*Index\s*is\s*([0-9]+(?:\.[0-9]+)?)",
-        r"Nasdaq\s*100\s*Index.*?P/E\s*Ratio.*?([0-9]+(?:\.[0-9]+)?)",
     ]
 
     for pattern in patterns:
@@ -184,22 +187,22 @@ def upsert_pe_history(pe_items: List[dict], day: str, pe_value: float) -> List[d
 
 
 def maybe_update_pe_history_from_env_or_url(latest_market_day: str, pe_items: List[dict]) -> Tuple[List[dict], str]:
-    # 1. 优先抓网页
     try:
         web_pe = fetch_world_pe()
+        print(f"[PE] using worldperatio PE: {web_pe}")
         return upsert_pe_history(pe_items, latest_market_day, web_pe), "web:worldperatio"
     except Exception as exc:
         print(f"[PE] worldperatio fetch failed: {exc}")
 
-    # 2. 回退到 CURRENT_PE
     current_pe = os.environ.get("CURRENT_PE", "").strip()
     if current_pe:
         try:
-            return upsert_pe_history(pe_items, latest_market_day, float(current_pe)), "env:CURRENT_PE"
+            pe = float(current_pe)
+            print(f"[PE] fallback to CURRENT_PE: {pe}")
+            return upsert_pe_history(pe_items, latest_market_day, pe), "env:CURRENT_PE"
         except ValueError:
             raise RuntimeError(f"CURRENT_PE 格式错误：{current_pe}")
 
-    # 3. 再回退到 PE_JSON_URL
     pe_json_url = os.environ.get("PE_JSON_URL", "").strip()
     if pe_json_url:
         response = requests.get(pe_json_url, timeout=30)
@@ -211,16 +214,22 @@ def maybe_update_pe_history_from_env_or_url(latest_market_day: str, pe_items: Li
             raise RuntimeError("PE_JSON_URL 返回 JSON 里缺少 pe 字段。")
 
         pe_day = payload.get("date", latest_market_day)
+        print(f"[PE] using PE_JSON_URL: {pe_value}")
         return upsert_pe_history(pe_items, str(pe_day), float(pe_value)), f"url:{pe_json_url}"
 
+    print("[PE] fallback to local pe_history.json only")
     return pe_items, "file:data/pe_history.json"
 
 
 def pe_lookup_fill(day: str, pe_items: List[dict]) -> Optional[float]:
-    eligible = [item for item in pe_items if item["date"] <= day]
-    if not eligible:
+    if not pe_items:
         return None
-    return float(eligible[-1]["pe"])
+
+    eligible = [item for item in pe_items if item["date"] <= day]
+    if eligible:
+        return float(eligible[-1]["pe"])
+
+    return float(pe_items[0]["pe"])
 
 
 def pe_percentile(day: str, pe_value: float, pe_items: List[dict], config: dict) -> float:
@@ -379,16 +388,4 @@ def main() -> int:
     }
 
     save_json(HISTORY_PATH, history_payload)
-    save_json(LATEST_PATH, latest_payload)
-    save_json(PE_HISTORY_PATH, pe_payload)
-
-    print(f"Generated {len(records)} records. Latest day: {latest['date']}, total score: {latest['total']}")
-    return 0
-
-
-if __name__ == "__main__":
-    try:
-        raise SystemExit(main())
-    except Exception as exc:
-        print(f"[ERROR] {exc}", file=sys.stderr)
-        raise
+    save
