@@ -1,25 +1,24 @@
 {
-  "generated_at": "2026-04-23T00:00:00Z",
-  "as_of": "2026-04-17",
-  "mode": "sample",
+  "generated_at": "2026-04-23T03:57:49Z",
+  "as_of": "2026-04-22",
+  "mode": "auto",
   "meta": {
-    "index_source": "sample",
-    "vol_source": "sample",
-    "pe_source": "sample",
-    "note": "部署后可由 GitHub Actions 自动改写"
+    "index_source": "FRED:NASDAQ100",
+    "vol_source": "FRED:VIXCLS",
+    "pe_source": "env:CURRENT_PE"
   },
   "record": {
-    "date": "2026-04-17",
-    "price": 26672.43,
+    "date": "2026-04-22",
+    "price": 26937.27,
     "pe": 36.19,
-    "ma200": 24589.0,
-    "vix": 17.48,
+    "ma200": 24669.0333,
+    "vix": 19.5,
+    "bias": 9.194672,
     "pePercentile": 0.984062,
-    "bias": 8.473016,
-    "peScore": 0.478125,
-    "maScore": 3.053967,
-    "vixScore": 4.96,
-    "total": 8.492092,
+    "peScore": 0.47814,
+    "maScore": 1.610656,
+    "vixScore": 9.0,
+    "total": 11.088796,
     "gradeLetter": "D",
     "gradeNote": "偏高，控制节奏"
   }
